@@ -365,6 +365,7 @@ class Nav:
         m[m == 50] = -1
 
         if self.pcl_ground.full():
+            ##
             with self.pcl_ground.mutex:
                 pcl_ground = self.pcl_ground.queue[0]
             ground_cld = self.listener.transformPointCloud('map', pcl_ground)
