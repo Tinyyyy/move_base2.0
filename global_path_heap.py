@@ -7,6 +7,7 @@ def postpoints(p, img):
     return [(x, y) for x in range(p[0] - 1, p[0] + 2) for y in range(p[1] - 1, p[1] + 2) if
             img[x][y] == 0 and (x, y) != p]
 
+
 def cal_global_path(map, start, end):
     img = map.copy()
     costmap = img.copy().astype(np.float)
@@ -42,7 +43,6 @@ def cal_global_path(map, start, end):
     finished = img.copy().astype(np.float)
     finished[:] = 0
     vis = []
-
     heapq.heappush(vis, (d[start], start))
     for ww in range(img.size):
         if len(vis) == 0:
@@ -57,16 +57,13 @@ def cal_global_path(map, start, end):
                 if d[p] + costmap[p] < d[i]:
                     d[i] = d[p] + costmap[p]
                     heapq.heappush(vis, (d[i], i))
-
     point = end
     path = [point]
-
     while point != start:
         post = postpoints(point, img)
         for i in post:
             if abs(d[i] + costmap[i] - d[point]) < 1e-13:
                 point = i
-
                 path.append(point)
                 break
     return path
