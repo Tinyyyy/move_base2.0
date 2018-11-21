@@ -374,6 +374,7 @@ class Nav:
         t2 = threading.Thread(target=self.pub_path, args=())
         t2.setDaemon(True)
         t2.start()
+        self.obstacle_list=[]
         while not rospy.is_shutdown():
             if self.map_buf.full() and self.goals_buf.full():
                 with self.map_buf.mutex:
