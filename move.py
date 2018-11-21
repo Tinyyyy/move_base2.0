@@ -108,7 +108,7 @@ class Nav:
                 pub2.publish(M)
 
     def dwa(self):
-        get_ready = False
+        self.get_ready = False
         last_vel=0
         while not rospy.is_shutdown():
             t1=time.time()
@@ -128,7 +128,7 @@ class Nav:
             min_dis_ind = dis.argmin()
             local_goal = p[min(min_dis_ind + 3, len(p) - 1)]
             if ((p[-1][0] - trans[0]) ** 2 + (p[-1][1] - trans[1]) ** 2) ** 0.5 < 0.05:
-                get_ready = False
+                self.get_ready = False
                 self.goals_buf.get()
                 print("goal reached!!")
                 i = 0
@@ -141,10 +141,10 @@ class Nav:
                     time.sleep(0.05)
                 self.path.get()
                 continue
-            if not get_ready:
+            if not self.get_ready:
                 theta = math.atan2(local_goal[1] - trans[1], local_goal[0] - trans[0])
                 if abs(theta - roat[2]) < math.pi / 12:
-                    get_ready = True
+                    self.get_ready = True
                 else:
                     cmd = geometry_msgs.msg.Twist()
                     cmd.linear.x = 0
@@ -181,7 +181,7 @@ class Nav:
                     ]
                 dis_sim = np.array(
                     [abs(((x[0] - local_goal[0]) ** 2 + (x[1] - local_goal[1]) ** 2) ** 0.5 - x[2]) for x in targets])
-                score = dis_sim-0.1*np.array([x[0] for x in xw_space])
+                score = dis_sim-0.01*np.array([x[0] for x in xw_space])
                 while 1:
                     ind = score.argmin()
                     (x, w) = xw_space[ind]
@@ -220,7 +220,7 @@ class Nav:
             #         x=xw_space[i][0]
             #         w=xw_space[i][1]
             # last_vel=x
-            print (x,w)
+            # print (x,w)
             left = -1
             center = -1
             right = -1
