@@ -67,10 +67,10 @@ def talker():
         print (map.info.resolution)
         p=[[8,y,0] for y in np.linspace(3,4,20)]
         pointcld=pc2.create_cloud_xyz32(header=std_msgs.msg.Header(frame_id='map'),points=p)
-        pub1.publish(pointcld)
+        # pub1.publish(pointcld)
         p = [[x, y, 0] for y in np.linspace(2, 4, 40) for x in np.linspace(3,5,40)]
         pointcld = pc2.create_cloud_xyz32(header=std_msgs.msg.Header(frame_id='map'), points=p)
-        pub2.publish(pointcld)
+        # pub2.publish(pointcld)
         rate.sleep()
 
 if __name__ == '__main__':

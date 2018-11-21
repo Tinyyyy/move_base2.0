@@ -109,8 +109,9 @@ class Nav:
 
     def dwa(self):
         get_ready = False
+        last_vel=0
         while not rospy.is_shutdown():
-
+            t1=time.time()
             while 1:
                 if self.path.full() and self.goals_buf.full():
                     break;
@@ -125,7 +126,7 @@ class Nav:
                 continue
             dis = np.sum((p - np.array([trans[0], trans[1]])) ** 2, axis=1)
             min_dis_ind = dis.argmin()
-            local_goal = p[min(min_dis_ind + 4, len(p) - 1)]
+            local_goal = p[min(min_dis_ind + 3, len(p) - 1)]
             if ((p[-1][0] - trans[0]) ** 2 + (p[-1][1] - trans[1]) ** 2) ** 0.5 < 0.05:
                 get_ready = False
                 self.goals_buf.get()
@@ -147,31 +148,79 @@ class Nav:
                 else:
                     cmd = geometry_msgs.msg.Twist()
                     cmd.linear.x = 0
-                    cmd.angular.z = 0.2
+                    cmd.angular.z = 0.5
                     self.vel.publish(cmd)
                     time.sleep(0.05)
                     continue
-
+            acc_lim=0.05
+            delta_vel=acc_lim*0.05
             max_vel_x = 0.3
             max_vel_w = 0.6
             t = 2.5
-            x_space = np.linspace(0.01, max_vel_x, 20)
+            x_space = np.linspace(0.01, max_vel_x, 30)
             w_space = np.linspace(-max_vel_w, max_vel_w, 20)
+            w_space=[x for x in w_space if x!=0]
             xw_space = [(x, w) for x in x_space for w in w_space]
-            targets = [
-                [
-                    trans[0] + x[0] / x[1] * (math.sin(roat[2] + x[1] * t) - math.sin(roat[2])),
-                    trans[1] + x[0] / x[1] * (-math.cos(roat[2] + x[1] * t) + math.cos(roat[2]))
-                ]
-                for x in xw_space if x[1] != 0]
+            if ((p[-1][0] - trans[0]) ** 2 + (p[-1][1] - trans[1]) ** 2) ** 0.5 < 0.5:
+                targets = [
+                    [
+                        trans[0] + x[0] / x[1] * (math.sin(roat[2] + x[1] * t) - math.sin(roat[2])),
+                        trans[1] + x[0] / x[1] * (-math.cos(roat[2] + x[1] * t) + math.cos(roat[2]))
+                    ]
+                    for x in xw_space]
 
-            self.sim_targets = targets
-            targets = np.array([[i[0], i[1]] for i in targets])
+                self.sim_targets = targets
+                dis_sim = np.sum((targets - local_goal) ** 2, axis=1) ** 0.5
+                score = dis_sim
+                ind = score.argmin()
+                (x, w) = xw_space[ind]
+            else:
+                targets = [
+                    (trans[0] - x[0] / x[1] * math.sin(roat[2]), trans[1] + x[0] / x[1] * math.cos(roat[2]), abs(x[0] / x[1]))
+                    for x in xw_space
+                    ]
+                dis_sim = np.array(
+                    [abs(((x[0] - local_goal[0]) ** 2 + (x[1] - local_goal[1]) ** 2) ** 0.5 - x[2]) for x in targets])
+                score = dis_sim-0.1*np.array([x[0] for x in xw_space])
+                while 1:
+                    ind = score.argmin()
+                    (x, w) = xw_space[ind]
+                    if abs(x-last_vel)<=acc_lim:
+                        last_vel=x
+                        break
+                    else:
+                        del xw_space[ind]
+                        score=np.delete(score,ind)
+                # x = 0
+                # w = 0
+                # ind = np.where(score < 0.05)[0]
+                # for i in ind:
+                #     if abs(last_vel - xw_space[i][0]) <= acc_lim and xw_space[i][0] >= x:
+                #         x = xw_space[i][0]
+                #         w = xw_space[i][1]
+                # last_vel = x
+            # targets = np.array([[i[0], i[1]] for i in targets])
 
-            dis_sim = np.sum((targets - local_goal) ** 2, axis=1) ** 0.5
-            score = dis_sim
-            ind = score.argmin()
-            (x, w) = xw_space[ind]
+            # dis_sim = np.sum((targets - local_goal) ** 2, axis=1) ** 0.5
+            # score = dis_sim
+            # # while 1:
+            # #     ind = score.argmin()
+            # #     (x, w) = xw_space[ind]
+            # #     if abs(x-last_vel)<=delta_vel:
+            # #         last_vel=x
+            # #         break
+            # #     else:
+            # #         del xw_space[ind]
+            # #         score=np.delete(score,ind)
+            # x=0
+            # w=0
+            # ind=np.where(score<0.05)[0]
+            # for i in ind:
+            #     if abs(last_vel-xw_space[i][0])<=acc_lim and xw_space[i][0]>x:
+            #         x=xw_space[i][0]
+            #         w=xw_space[i][1]
+            # last_vel=x
+            print (x,w)
             left = -1
             center = -1
             right = -1
@@ -252,7 +301,8 @@ class Nav:
                 if self.traj.full():
                     self.traj.get()
                 self.traj.put((x, w))
-                time.sleep(0.05)
+                time.sleep(0.1)
+            # print (time.time()-t1)
 
     def tf_from_map_to_grid(self, x, y, originx, originy, resolution, height):
         start1 = (round((x - originx) / resolution),
