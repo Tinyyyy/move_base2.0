@@ -388,11 +388,11 @@ class Nav:
         # angle=np.array([math.atan2(i.y,i.x) for i in obstacle_cld_base.points]).sort()
         # angle_diff=angle[1:]-angle[:-1]
         # ind=np.where(angle_diff>math.pi/12.0)
-
+        self.obstacle_list+=[(i.x,i.y) for i in obstacle_cld.points ]
         obstacle_cld = [
-            self.tf_from_map_to_grid(i.x, i.y, occu_map.info.origin.position.x, occu_map.info.origin.position.y,
+            self.tf_from_map_to_grid(i[0], i[1], occu_map.info.origin.position.x, occu_map.info.origin.position.y,
                                      occu_map.info.resolution, occu_map.info.height)
-            for i in obstacle_cld.points]
+            for i in self.obstacle_list]
 
         for ob in obstacle_cld:
             if ob[0] >= m.shape[0] - 2 or ob[1] >= m.shape[1] - 2 or ob[0] < 3 or ob[1] < 3:
@@ -428,7 +428,7 @@ class Nav:
         # self.global_ok=0
         self.sim_targets = None
         self.last_bump = 0
-
+        self.obstacle_list=[]
         t1 = threading.Thread(target=self.dwa, args=())
         t1.setDaemon(True)
         t1.start()
