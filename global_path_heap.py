@@ -10,11 +10,13 @@ def postpoints(p, img):
 
 def cal_global_path(map, start, end):
     img = map.copy()
-    costmap = img.copy().astype(np.float)
+    costmap = img.copy().astype(np.float128)
     costmap[:] = 0
     obstacle = list(zip(*np.where(img > 30)))
     radius = 20
     ob = np.ones([2 * radius + 1, 2 * radius + 1])
+    if img[start]!=0:
+        return []
     for i in range(0, radius + radius + 1):
         for j in range(0, radius + radius + 1):
             ob[i][j] = 5000 - math.sqrt((radius - i) ** 2 + (radius - j) ** 2)
@@ -37,10 +39,10 @@ def cal_global_path(map, start, end):
     costmap = costmap ** 8
     costmap = (costmap - costmap.min()) / (costmap.max() - costmap.min()) * 10
     costmap[costmap == 0] = costmap[costmap != 0].min()
-    d = img.copy().astype(np.float)
+    d = img.copy().astype(np.float128)
     d[:] = 9999999
     d[start] = 0
-    finished = img.copy().astype(np.float)
+    finished = img.copy()
     finished[:] = 0
     vis = []
     heapq.heappush(vis, (d[start], start))
@@ -51,18 +53,18 @@ def cal_global_path(map, start, end):
         if p == end:
             break
         if finished[p] == 0:
-            finished[p] == 1
+            finished[p] = 1
             post = postpoints(p, img)
             for i in post:
-                if d[p] + costmap[p] < d[i]:
-                    d[i] = d[p] + costmap[p]
+                if d[p] + costmap[p] + costmap[i] < d[i]:
+                    d[i] = d[p] + costmap[p] + costmap[i]
                     heapq.heappush(vis, (d[i], i))
     point = end
     path = [point]
     while point != start:
         post = postpoints(point, img)
         for i in post:
-            if abs(d[i] + costmap[i] - d[point]) < 1e-13:
+            if abs(d[i] + costmap[i] +costmap [point]- d[point]) == 0:
                 point = i
                 path.append(point)
                 break
