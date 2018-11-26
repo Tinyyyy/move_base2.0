@@ -296,7 +296,7 @@ class Nav:
                 if self.traj.full():
                     self.traj.get()
                 self.traj.put((x, w))
-                print (x,w)
+                # print (x,w)
                 time.sleep(0.1)
             # print (time.time()-t1)
 

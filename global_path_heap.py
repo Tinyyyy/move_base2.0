@@ -10,7 +10,7 @@ def postpoints(p, img):
 
 def cal_global_path(map, start, end):
     img = map.copy()
-    costmap = img.copy().astype(np.float128)
+    costmap = img.copy().astype(np.float64)
     costmap[:] = 0
     obstacle = list(zip(*np.where(img > 30)))
     radius = 20
@@ -39,7 +39,7 @@ def cal_global_path(map, start, end):
     costmap = costmap ** 8
     costmap = (costmap - costmap.min()) / (costmap.max() - costmap.min()) * 10
     costmap[costmap == 0] = costmap[costmap != 0].min()
-    d = img.copy().astype(np.float128)
+    d = img.copy().astype(np.float64)
     d[:] = 9999999
     d[start] = 0
     finished = img.copy()
@@ -64,7 +64,7 @@ def cal_global_path(map, start, end):
     while point != start:
         post = postpoints(point, img)
         for i in post:
-            if abs(d[i] + costmap[i] +costmap [point]- d[point]) == 0:
+            if abs(d[i] + costmap[i] +costmap [point]- d[point]) < 1e-13:
                 point = i
                 path.append(point)
                 break
