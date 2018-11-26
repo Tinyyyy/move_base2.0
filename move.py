@@ -114,7 +114,7 @@ class Nav:
             t1=time.time()
             while 1:
                 if self.path.full() and self.goals_buf.full():
-                    break;
+                    break
             with self.path.mutex:
                 path = self.path.queue[0]
             (trans, qua) = self.listener.lookupTransform('map', 'base_footprint', rospy.Time(0))
