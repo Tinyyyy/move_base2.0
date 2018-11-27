@@ -224,7 +224,7 @@ class Nav:
                 else:
                     cmd = geometry_msgs.msg.Twist()
                     cmd.linear.x = 0
-                    cmd.angular.z = 0.2
+                    cmd.angular.z = 0.4
                     self.vel.publish(cmd)
                     time.sleep(0.05)
                     continue
