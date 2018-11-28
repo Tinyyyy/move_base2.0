@@ -334,7 +334,7 @@ class Nav:
                         time.sleep(0.05)
                 elif center == 1:
                     i = 0
-                    while i != 15:
+                    while i != 20:
                         i = i + 1
                         cmd = geometry_msgs.msg.Twist()
                         cmd.linear.x = -0.12
@@ -369,6 +369,10 @@ class Nav:
             with self.pcl_ground.mutex:
                 pcl_ground = self.pcl_ground.queue[0]
             ground_cld = self.listener.transformPointCloud('map', pcl_ground)
+            # if self.pcl_ground_his.full():
+            #     self.pcl_ground_his.get()
+            # self.pcl_ground_his.put(ground_cld)
+
             ground_cld = [
                 self.tf_from_map_to_grid(i.x, i.y, occu_map.info.origin.position.x, occu_map.info.origin.position.y,
                                          occu_map.info.resolution, occu_map.info.height) for i in ground_cld.points]
@@ -382,17 +386,20 @@ class Nav:
             return m
         with self.pcl.mutex:
             pcl = self.pcl.queue[0]
-
         obstacle_cld = self.listener.transformPointCloud('map', pcl)
+        if self.pcl_his.full():
+            self.pcl_his.get()
+        self.pcl_his.put(obstacle_cld)
         # obstacle_cld_base = self.listener.transformPointCloud('base_footprint', pcl)
         # angle=np.array([math.atan2(i.y,i.x) for i in obstacle_cld_base.points]).sort()
         # angle_diff=angle[1:]-angle[:-1]
         # ind=np.where(angle_diff>math.pi/12.0)
-        self.obstacle_list+=[(i.x,i.y) for i in obstacle_cld.points ]
-        obstacle_cld = [
-            self.tf_from_map_to_grid(i[0], i[1], occu_map.info.origin.position.x, occu_map.info.origin.position.y,
+        # self.obstacle_list+=[(i.x,i.y) for i in obstacle_cld.points ]
+        obstacle_cld = []
+        for j in self.pcl_his.queue:
+            obstacle_cld+=[self.tf_from_map_to_grid(i.x, i.y, occu_map.info.origin.position.x, occu_map.info.origin.position.y,
                                      occu_map.info.resolution, occu_map.info.height)
-            for i in self.obstacle_list]
+            for i in j.points]
 
         for ob in obstacle_cld:
             if ob[0] >= m.shape[0] - 2 or ob[1] >= m.shape[1] - 2 or ob[0] < 3 or ob[1] < 3:
@@ -410,6 +417,8 @@ class Nav:
         self.path = Queue.Queue(1)
         self.pcl = Queue.Queue(1)
         self.pcl_ground = Queue.Queue(1)
+        self.pcl_his = Queue.Queue(10)
+        self.pcl_ground_his = Queue.Queue(10)
         self.event_bump = Queue.Queue(100)
         self.bump_time = Queue.Queue(100)
         self.event_cliff = Queue.Queue(100)
@@ -460,12 +469,12 @@ class Nav:
                                                occu_map.info.origin.position.y, occu_map.info.resolution,
                                                occu_map.info.height)
                 t2 = time.time()
-                # print(t2 - t1,"t1")
+                print(t2 - t1,"t1")
                 path = cal_global_path(nav_map, start, end)
                 path1 = [(x[1] * occu_map.info.resolution + occu_map.info.origin.position.x,
                           (occu_map.info.height - x[0]) * occu_map.info.resolution + occu_map.info.origin.position.y)
                          for x in path[::-1]]  # from start to end
-                # print(time.time()-t2,"t2")
+                print(time.time()-t2,"t2")
 
                 P = nav_msgs.msg.Path()
                 P.header = std_msgs.msg.Header(frame_id="map")
