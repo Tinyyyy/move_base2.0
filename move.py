@@ -288,21 +288,21 @@ class Nav:
                         self.last_bump = i[1]
                 if left == 1:
                     i = 0
-                    while i != 10:
+                    while i != 15:
                         i = i + 1
                         cmd = geometry_msgs.msg.Twist()
                         cmd.linear.x = -0.12
                         cmd.angular.z = 0
                         self.vel.publish(cmd)
                         time.sleep(0.05)
-                    while i != 20:
+                    while i != 30:
                         i = i + 1
                         cmd = geometry_msgs.msg.Twist()
                         cmd.linear.x = 0
                         cmd.angular.z = -0.8
                         self.vel.publish(cmd)
                         time.sleep(0.05)
-                    while i != 30:
+                    while i != 45:
                         i = i + 1
                         cmd = geometry_msgs.msg.Twist()
                         cmd.linear.x = 0.12
@@ -311,21 +311,21 @@ class Nav:
                         time.sleep(0.05)
                 elif right == 1:
                     i = 0
-                    while i != 10:
+                    while i != 15:
                         i = i + 1
                         cmd = geometry_msgs.msg.Twist()
                         cmd.linear.x = -0.12
                         cmd.angular.z = 0
                         self.vel.publish(cmd)
                         time.sleep(0.05)
-                    while i != 20:
+                    while i != 30:
                         i = i + 1
                         cmd = geometry_msgs.msg.Twist()
                         cmd.linear.x = 0
                         cmd.angular.z = 0.8
                         self.vel.publish(cmd)
                         time.sleep(0.05)
-                    while i != 30:
+                    while i != 45:
                         i = i + 1
                         cmd = geometry_msgs.msg.Twist()
                         cmd.linear.x = 0.12
@@ -334,7 +334,7 @@ class Nav:
                         time.sleep(0.05)
                 elif center == 1:
                     i = 0
-                    while i != 20:
+                    while i != 30:
                         i = i + 1
                         cmd = geometry_msgs.msg.Twist()
                         cmd.linear.x = -0.12
@@ -364,15 +364,29 @@ class Nav:
         m = m[::-1]
         m[m == 50] = -1
 
+        if self.pcl.full():
+            with self.pcl.mutex:
+                pcl = self.pcl.queue[0]
+            obstacle_cld = self.listener.transformPointCloud('map', pcl)
+            if self.pcl_his.full():
+                self.pcl_his.get()
+            self.pcl_his.put(obstacle_cld)
+        if not self.pcl_his.empty():
+            obstacle_cld = []
+            for j in self.pcl_his.queue:
+                obstacle_cld+=[self.tf_from_map_to_grid(i.x, i.y, occu_map.info.origin.position.x, occu_map.info.origin.position.y,
+                                         occu_map.info.resolution, occu_map.info.height)
+                for i in j.points]
+
+            for ob in obstacle_cld:
+                if ob[0] >= m.shape[0] - 2 or ob[1] >= m.shape[1] - 2 or ob[0] < 3 or ob[1] < 3:
+                    # print(ob, m.shape,"ob")
+                    continue
+                m[ob] = 100
         if self.pcl_ground.full():
-            ##
             with self.pcl_ground.mutex:
                 pcl_ground = self.pcl_ground.queue[0]
             ground_cld = self.listener.transformPointCloud('map', pcl_ground)
-            # if self.pcl_ground_his.full():
-            #     self.pcl_ground_his.get()
-            # self.pcl_ground_his.put(ground_cld)
-
             ground_cld = [
                 self.tf_from_map_to_grid(i.x, i.y, occu_map.info.origin.position.x, occu_map.info.origin.position.y,
                                          occu_map.info.resolution, occu_map.info.height) for i in ground_cld.points]
@@ -381,31 +395,6 @@ class Nav:
                     # print(gr,m.shape,"gr")
                     continue
                 m[gr] = 0
-
-        if self.pcl.empty():
-            return m
-        with self.pcl.mutex:
-            pcl = self.pcl.queue[0]
-        obstacle_cld = self.listener.transformPointCloud('map', pcl)
-        if self.pcl_his.full():
-            self.pcl_his.get()
-        self.pcl_his.put(obstacle_cld)
-        # obstacle_cld_base = self.listener.transformPointCloud('base_footprint', pcl)
-        # angle=np.array([math.atan2(i.y,i.x) for i in obstacle_cld_base.points]).sort()
-        # angle_diff=angle[1:]-angle[:-1]
-        # ind=np.where(angle_diff>math.pi/12.0)
-        # self.obstacle_list+=[(i.x,i.y) for i in obstacle_cld.points ]
-        obstacle_cld = []
-        for j in self.pcl_his.queue:
-            obstacle_cld+=[self.tf_from_map_to_grid(i.x, i.y, occu_map.info.origin.position.x, occu_map.info.origin.position.y,
-                                     occu_map.info.resolution, occu_map.info.height)
-            for i in j.points]
-
-        for ob in obstacle_cld:
-            if ob[0] >= m.shape[0] - 2 or ob[1] >= m.shape[1] - 2 or ob[0] < 3 or ob[1] < 3:
-                # print(ob, m.shape,"ob")
-                continue
-            m[ob] = 100
         return m
 
     def main_proc(self):
