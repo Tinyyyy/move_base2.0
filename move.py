@@ -458,7 +458,7 @@ class Nav:
                                                occu_map.info.origin.position.y, occu_map.info.resolution,
                                                occu_map.info.height)
                 t2 = time.time()
-                print(t2 - t1,"t1")
+                # print(t2 - t1,"t1")
                 path = cal_global_path(nav_map, start, end)
                 path1 = [(x[1] * occu_map.info.resolution + occu_map.info.origin.position.x,
                           (occu_map.info.height - x[0]) * occu_map.info.resolution + occu_map.info.origin.position.y)
